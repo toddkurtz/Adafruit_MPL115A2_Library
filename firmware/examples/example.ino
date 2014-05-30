@@ -15,12 +15,12 @@
 
     @section  HISTORY
 
+    v1.0.1 - Ported to Spark Core
     v1.0 - First release
 */
 /**************************************************************************/
 
-#include <Wire.h>
-#include <Adafruit_MPL3115A2.h>
+#include "Adafruit_MPL3115A2/Adafruit_MPL3115A2.h"
 
 // Power by connecting Vin to 3-5V, GND to GND
 // Uses I2C - connect SCL to the SCL pin, SDA to SDA pin
@@ -29,16 +29,18 @@
 Adafruit_MPL3115A2 baro = Adafruit_MPL3115A2();
 
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(115200);
+  delay(5000);
+  
   Serial.println("Adafruit_MPL3115A2 test!");
+  
+  while(! baro.begin()) {
+    Serial.println("Couldnt find sensor");
+    delay(1000);
+  }
 }
 
 void loop() {
-  if (! baro.begin()) {
-    Serial.println("Couldnt find sensor");
-    return;
-  }
-  
   float pascals = baro.getPressure();
   // Our weather page presents pressure in Inches (Hg)
   // Use http://www.onlineconversion.com/pressure.htm for other units

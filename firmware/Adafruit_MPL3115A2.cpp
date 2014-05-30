@@ -15,16 +15,11 @@
 
     @section  HISTORY
 
+    v1.0.1 - Ported to Spark Core
     v1.0 - First release
 */
 /**************************************************************************/
-#if ARDUINO >= 100
- #include "Arduino.h"
-#else
- #include "WProgram.h"
-#endif
 
-#include <Wire.h>
 
 #include "Adafruit_MPL3115A2.h"
 
@@ -169,8 +164,8 @@ uint8_t Adafruit_MPL3115A2::read8(uint8_t a) {
 }
 
 void Adafruit_MPL3115A2::write8(uint8_t a, uint8_t d) {
-  Serial.print("Writing $"); Serial.print(a, HEX); 
-  Serial.print(" = 0x"); Serial.println(d, HEX);
+  //Serial.print("Writing $"); Serial.print(a, HEX); 
+  //Serial.print(" = 0x"); Serial.println(d, HEX);
   Wire.beginTransmission(MPL3115A2_ADDRESS); // start transmission to device 
   Wire.write(a); // sends register address to write to
   Wire.write(d); // sends register data

@@ -13,17 +13,12 @@
 
     @section  HISTORY
 
+    v1.0.1 - Ported to Spark Core
     v1.0  - First release
 */
 /**************************************************************************/
 
-#if ARDUINO >= 100
- #include "Arduino.h"
-#else
- #include "WProgram.h"
-#endif
-
-#include <Wire.h>
+#include "application.h"
 
 /*=========================================================================
     I2C ADDRESS/BITS
