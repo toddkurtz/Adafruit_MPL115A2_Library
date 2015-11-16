@@ -1,9 +1,9 @@
-Adafruit_MPL3115A2
+Adafruit_MPL115A2
 ==================
 
-Driver for the Adafruit MPL3115A2 barometric/altitude pressure sensor breakout
+Driver for the Adafruit MPL115A2 barometric pressure + Temperature sensor breakout
 
-Designed specifically to work with the MPL3115A2 Breakout in the Adafruit shop 
+Designed specifically to work with the MPL115A2 Breakout in the Adafruit shop 
   ----> https://www.adafruit.com/products/1893
 
 This sensor uses I2C to communicate, 2 pins are required to interface
