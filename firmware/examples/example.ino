@@ -1,4 +1,4 @@
-#include "Adafruit_MPL115A2/Adafruit_MPL115A2.h"
+#include "Adafruit_MPL115A2_Photon/Adafruit_MPL115A2_Photon.h"
 
 Adafruit_MPL115A2 = mpl115a2;
 
