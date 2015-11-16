@@ -1,35 +1,84 @@
 /**************************************************************************/
 /*!
-    @file     Adafruit_MPL3115A2.cpp
+    @file     Adafruit_MPL115A2.cpp
     @author   K.Townsend (Adafruit Industries)
     @license  BSD (see license.txt)
-
-    Driver for the MPL3115A2 barometric pressure sensor
-
-    This is a library for the Adafruit MPL3115A2 breakout
-    ----> https://www.adafruit.com/products/1893
-
+    Driver for the MPL115A2 barometric pressure sensor
+    This is a library for the Adafruit MPL115A2 breakout
+    ----> https://www.adafruit.com/products/992
     Adafruit invests time and resources providing this open source code,
     please support Adafruit and open-source hardware by purchasing
     products from Adafruit!
-
     @section  HISTORY
-
-    v1.0.1 - Ported to Spark Core
     v1.0 - First release
+    v1.1 - Rick Sellens added casts to make bit shifts work below 22.6C
+         - get both P and T with a single call to getPT
 */
 /**************************************************************************/
 
-
-#include "Adafruit_MPL3115A2.h"
+#include "Adafruit_MPL115A2.h"
 
 /**************************************************************************/
 /*!
     @brief  Instantiates a new MPL3115A2 class
 */
 /**************************************************************************/
-Adafruit_MPL3115A2::Adafruit_MPL3115A2() {
+Adafruit_MPL115A2::Adafruit_MPL115A2() {
 
+}
+
+/**************************************************************************/
+/*!
+    @brief  Gets the factory-set coefficients for this particular sensor
+*/
+/**************************************************************************/
+void Adafruit_MPL115A2::readCoefficients() {
+  int16_t a0coeff;
+  int16_t b1coeff;
+  int16_t b2coeff;
+  int16_t c12coeff;
+
+  Wire.beginTransmission(MPL115A2_ADDRESS);
+  i2cwrite((uint8_t)MPL115A2_REGISTER_A0_COEFF_MSB);
+  Wire.endTransmission();
+
+  Wire.requestFrom(MPL115A2_ADDRESS, 8);
+  a0coeff = (( (uint16_t) i2cread() << 8) | i2cread());
+  b1coeff = (( (uint16_t) i2cread() << 8) | i2cread());
+  b2coeff = (( (uint16_t) i2cread() << 8) | i2cread());
+  c12coeff = (( (uint16_t) (i2cread() << 8) | i2cread())) >> 2;
+
+  /*  
+  Serial.print("A0 = "); Serial.println(a0coeff, HEX);
+  Serial.print("B1 = "); Serial.println(b1coeff, HEX);
+  Serial.print("B2 = "); Serial.println(b2coeff, HEX);
+  Serial.print("C12 = "); Serial.println(c12coeff, HEX);
+  */
+
+  _mpl115a2_a0 = (float)a0coeff / 8;
+  _mpl115a2_b1 = (float)b1coeff / 8192;
+  _mpl115a2_b2 = (float)b2coeff / 16384;
+  _mpl115a2_c12 = (float)c12coeff;
+  _mpl115a2_c12 /= 4194304.0;
+
+  /*
+  Serial.print("a0 = "); Serial.println(_mpl115a2_a0);
+  Serial.print("b1 = "); Serial.println(_mpl115a2_b1);
+  Serial.print("b2 = "); Serial.println(_mpl115a2_b2);
+  Serial.print("c12 = "); Serial.println(_mpl115a2_c12);
+  */
+}
+
+/**************************************************************************/
+/*!
+    @brief  Instantiates a new MPL115A2 class
+*/
+/**************************************************************************/
+Adafruit_MPL115A2::Adafruit_MPL115A2() {
+  _mpl115a2_a0 = 0.0F;
+  _mpl115a2_b1 = 0.0F;
+  _mpl115a2_b2 = 0.0F;
+  _mpl115a2_c12 = 0.0F;
 }
 
 /**************************************************************************/
@@ -37,23 +86,10 @@ Adafruit_MPL3115A2::Adafruit_MPL3115A2() {
     @brief  Setups the HW (reads coefficients values, etc.)
 */
 /**************************************************************************/
-boolean Adafruit_MPL3115A2::begin() {
+void Adafruit_MPL115A2::begin() {
   Wire.begin();
-  uint8_t whoami = read8(MPL3115A2_WHOAMI);
-  Serial.println(whoami, HEX);
-  if (whoami != 0xC4) {
-    return false;
-  }
-
-  write8(MPL3115A2_CTRL_REG1, 
-	 MPL3115A2_CTRL_REG1_SBYB |
-	 MPL3115A2_CTRL_REG1_OS128 |
-	 MPL3115A2_CTRL_REG1_ALT);
-  write8(MPL3115A2_PT_DATA_CFG, 
-	 MPL3115A2_PT_DATA_CFG_TDEFE |
-	 MPL3115A2_PT_DATA_CFG_PDEFE |
-	 MPL3115A2_PT_DATA_CFG_DREM);
-  return true;
+  // Read factory coefficient values (this only needs to be done once)
+  readCoefficients();
 }
 
 /**************************************************************************/
@@ -61,113 +97,57 @@ boolean Adafruit_MPL3115A2::begin() {
     @brief  Gets the floating-point pressure level in kPa
 */
 /**************************************************************************/
-float Adafruit_MPL3115A2::getPressure() {
-  uint32_t pressure;
+float Adafruit_MPL115A2::getPressure() {
+  float     pressureComp,centigrade;
 
-  write8(MPL3115A2_CTRL_REG1, 
-	 MPL3115A2_CTRL_REG1_SBYB |
-	 MPL3115A2_CTRL_REG1_OS128 |
-	 MPL3115A2_CTRL_REG1_BAR);
-
-  uint8_t sta = 0;
-  while (! (sta & MPL3115A2_REGISTER_STATUS_PDR)) {
-    sta = read8(MPL3115A2_REGISTER_STATUS);
-    delay(10);
-  }
-  Wire.beginTransmission(MPL3115A2_ADDRESS); // start transmission to device 
-  Wire.write(MPL3115A2_REGISTER_PRESSURE_MSB); 
-  Wire.endTransmission(false); // end transmission
-  
-  Wire.requestFrom((uint8_t)MPL3115A2_ADDRESS, (uint8_t)3);// send data n-bytes read
-  pressure = Wire.read(); // receive DATA
-  pressure <<= 8;
-  pressure |= Wire.read(); // receive DATA
-  pressure <<= 8;
-  pressure |= Wire.read(); // receive DATA
-  pressure >>= 4;
-
-  float baro = pressure;
-  baro /= 4.0;
-  return baro;
+  getPT(&pressureComp, &centigrade);
+  return pressureComp;
 }
 
-float Adafruit_MPL3115A2::getAltitude() {
-  uint32_t alt;
-
-  write8(MPL3115A2_CTRL_REG1, 
-	 MPL3115A2_CTRL_REG1_SBYB |
-	 MPL3115A2_CTRL_REG1_OS128 |
-	 MPL3115A2_CTRL_REG1_ALT);
-
-  uint8_t sta = 0;
-  while (! (sta & MPL3115A2_REGISTER_STATUS_PDR)) {
-    sta = read8(MPL3115A2_REGISTER_STATUS);
-    delay(10);
-  }
-  Wire.beginTransmission(MPL3115A2_ADDRESS); // start transmission to device 
-  Wire.write(MPL3115A2_REGISTER_PRESSURE_MSB); 
-  Wire.endTransmission(false); // end transmission
-  
-  Wire.requestFrom((uint8_t)MPL3115A2_ADDRESS, (uint8_t)3);// send data n-bytes read
-  alt = Wire.read(); // receive DATA
-  alt <<= 8;
-  alt |= Wire.read(); // receive DATA
-  alt <<= 8;
-  alt |= Wire.read(); // receive DATA
-  alt >>= 4;
-
-  float altitude = alt;
-  altitude /= 16.0;
-  return altitude;
-}
 
 /**************************************************************************/
 /*!
     @brief  Gets the floating-point temperature in Centigrade
 */
 /**************************************************************************/
-float Adafruit_MPL3115A2::getTemperature() {
-  uint16_t t;
+float Adafruit_MPL115A2::getTemperature() {
+  float     pressureComp, centigrade;
 
-  uint8_t sta = 0;
-  while (! (sta & MPL3115A2_REGISTER_STATUS_TDR)) {
-    sta = read8(MPL3115A2_REGISTER_STATUS);
-    delay(10);
-  }
-  Wire.beginTransmission(MPL3115A2_ADDRESS); // start transmission to device 
-  Wire.write(MPL3115A2_REGISTER_TEMP_MSB); 
-  Wire.endTransmission(false); // end transmission
-  
-  Wire.requestFrom((uint8_t)MPL3115A2_ADDRESS, (uint8_t)2);// send data n-bytes read
-  t = Wire.read(); // receive DATA
-  t <<= 8;
-  t |= Wire.read(); // receive DATA
-  t >>= 4;
-
-  float temp = t;
-  temp /= 16.0;
-  return temp;
+  getPT(&pressureComp, &centigrade);
+  return centigrade;
 }
 
+/**************************************************************************/
+/*!
+    @brief  Gets both at once and saves a little time
+*/
+/**************************************************************************/
+void Adafruit_MPL115A2::getPT(float *P, float *T) {
+  uint16_t 	pressure, temp;
+  float     pressureComp;
 
+  // Get raw pressure and temperature settings
+  Wire.beginTransmission(MPL115A2_ADDRESS);
+  i2cwrite((uint8_t)MPL115A2_REGISTER_STARTCONVERSION);
+  i2cwrite((uint8_t)0x00);
+  Wire.endTransmission();
 
+  // Wait a bit for the conversion to complete (3ms max)
+  delay(5);
 
-/*********************************************************************/
+  Wire.beginTransmission(MPL115A2_ADDRESS);
+  i2cwrite((uint8_t)MPL115A2_REGISTER_PRESSURE_MSB);  // Register
+  Wire.endTransmission();
 
-uint8_t Adafruit_MPL3115A2::read8(uint8_t a) {
-  Wire.beginTransmission(MPL3115A2_ADDRESS); // start transmission to device 
-  Wire.write(a); // sends register address to read from
-  Wire.endTransmission(false); // end transmission
+  Wire.requestFrom(MPL115A2_ADDRESS, 4);
+  pressure = (( (uint16_t) i2cread() << 8) | i2cread()) >> 6;
+  temp = (( (uint16_t) i2cread() << 8) | i2cread()) >> 6;
+
+  // See datasheet p.6 for evaluation sequence
+  pressureComp = _mpl115a2_a0 + (_mpl115a2_b1 + _mpl115a2_c12 * temp ) * pressure + _mpl115a2_b2 * temp;
+
+  // Return pressure and temperature as floating point values
+  *P = ((65.0F / 1023.0F) * pressureComp) + 50.0F;        // kPa
+  *T = ((float) temp - 498.0F) / -5.35F +25.0F;           // C
   
-  Wire.requestFrom((uint8_t)MPL3115A2_ADDRESS, (uint8_t)1);// send data n-bytes read
-  return Wire.read(); // receive DATA
-}
-
-void Adafruit_MPL3115A2::write8(uint8_t a, uint8_t d) {
-  //Serial.print("Writing $"); Serial.print(a, HEX); 
-  //Serial.print(" = 0x"); Serial.println(d, HEX);
-  Wire.beginTransmission(MPL3115A2_ADDRESS); // start transmission to device 
-  Wire.write(a); // sends register address to write to
-  Wire.write(d); // sends register data
-  Wire.endTransmission(false); // end transmission
 }
