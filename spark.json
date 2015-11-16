@@ -1,7 +1,7 @@
 {
-	"name": "Adafruit_MPL3115A2",
+	"name": "Adafruit_MPL115A2",
 	"author": "Garrett Bartley",
 	"version": "1.0.1",
 	"license": "BSD",
-	"description": "Spark Core library for the MPL3115A2 sensors in the Adafruit shop"
+	"description": "Spark Core library for the MPL115A2 sensors in the Adafruit shop"
 }
