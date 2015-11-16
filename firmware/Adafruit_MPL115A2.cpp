@@ -23,7 +23,7 @@
     @brief  Instantiates a new MPL115A2 class
 */
 /**************************************************************************/
-Adafruit_MPL115A2_Photon::Adafruit_MPL115A2() {
+Adafruit_MPL115A2::Adafruit_MPL115A2() {
 
 }
 
