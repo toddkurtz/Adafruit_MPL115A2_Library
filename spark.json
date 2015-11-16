@@ -1,5 +1,5 @@
 {
-	"name": "Adafruit_MPL115A2",
+	"name": "Adafruit_MPL115A2_Photon",
 	"author": "Garrett Bartley",
 	"version": "1.0.1",
 	"license": "BSD",
