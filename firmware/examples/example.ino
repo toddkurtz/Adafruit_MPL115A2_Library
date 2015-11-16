@@ -1,6 +1,6 @@
-#include "Adafruit_MPL115A2_Photon/Adafruit_MPL115A2_Photon.h"
+#include "Adafruit_MPL115A2/Adafruit_MPL115A2.h"
 
-Adafruit_MPL115A2_Photon = mpl115a2;
+Adafruit_MPL115A2 = mpl115a2;
 
 void setup(void) 
 {
