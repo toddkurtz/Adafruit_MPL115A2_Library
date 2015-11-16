@@ -1,6 +1,6 @@
 {
-	"name": "Adafruit_MPL115A2_Photon",
-	"author": "Garrett Bartley",
+	"name": "Adafruit_MPL115A2",
+	"author": "Todd",
 	"version": "1.0.1",
 	"license": "BSD",
 	"description": "Spark Core library for the MPL115A2 sensors in the Adafruit shop"
