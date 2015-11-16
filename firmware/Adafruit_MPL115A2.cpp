@@ -16,11 +16,11 @@
 */
 /**************************************************************************/
 
-#include "Adafruit_MPL115A2_Photon.h"
+#include "Adafruit_MPL115A2.h"
 
 /**************************************************************************/
 /*!
-    @brief  Instantiates a new MPL3115A2 class
+    @brief  Instantiates a new MPL115A2 class
 */
 /**************************************************************************/
 Adafruit_MPL115A2_Photon::Adafruit_MPL115A2() {
