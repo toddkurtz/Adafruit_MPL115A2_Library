@@ -60,5 +60,5 @@ class Adafruit_MPL115A2{
   uint8_t read8(uint8_t a);
   uint8_t mode;
   
-};
+}
 
